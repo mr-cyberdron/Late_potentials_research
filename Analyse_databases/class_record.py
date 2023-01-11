@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
-from Analog_filters import AnalogFilterDesign
+from Analyse_databases.modules.Analog_filters import AnalogFilterDesign
 import neurokit2 as nk
 
 

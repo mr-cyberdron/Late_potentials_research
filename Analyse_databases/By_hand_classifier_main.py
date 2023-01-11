@@ -1,8 +1,7 @@
 import numpy as np
-from WFDB import WfdbParce
+from Analyse_databases.modules.WFDB import WfdbParce
 from class_record import EcgRecord
 import matplotlib.pyplot as plt
-from Withdrawal_tools import txt_log
 from matplotlib.widgets import Button
 import pylab
 import os
@@ -19,7 +18,7 @@ def t_vectors(signals, fs) -> list[list[float]]:
     return t_vectors_mass
 
 
-def plot_ecg_record(signals, leads, units, fs_mass, title, file, metadata) -> None:
+def plot_ecg_record(signals, leads, units, fs_mass, title, filee, metadata) -> None:
     tvectors = t_vectors(signals, fs_mass)
     n_cols = 3
     expected_n_rows = int(np.ceil(len(signals) / n_cols))
@@ -63,7 +62,7 @@ def plot_ecg_record(signals, leads, units, fs_mass, title, file, metadata) -> No
         save_analyse_result('none')
 
     def save_analyse_result(typee):
-        dataline = {'file': [file], 'type': [typee], 'metadata_json': [str(metadata)]}
+        dataline = {'file': [filee], 'type': [typee], 'metadata_json': [str(metadata)]}
         df_line = pd.DataFrame(data=dataline)
         old_df = pd.read_csv("logfile.csv")
         new_df = pd.concat([old_df, df_line])
@@ -83,10 +82,11 @@ def plot_ecg_record(signals, leads, units, fs_mass, title, file, metadata) -> No
     plt.show()
 
 
-files_list_path = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/ptb-diagnostic-ecg-database-1.0.0/RECORDS'
-
+# ------------------------------------Input variables-------------------------------------------#
+#ptb-diagnostic-ecg-database-1.0.0 https://physionet.org/content/ptbdb/1.0.0/
+files_list_path = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/C/RECORDS'
 file_path_header = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/ptb-diagnostic-ecg-database-1.0.0/'
-
+# ----------------------------------------------------------------------------------------------#
 with open(files_list_path, "r") as f:
     files_paths_parts = f.readlines()
 
@@ -104,7 +104,6 @@ for file in files_paths_parts:
     print(file)
     total_num = str(file_counter) + '/' + str(len(files_paths_parts))
     file_counter += 1
-    txt_log(total_num)
     print(total_num)
     if file not in files_list:
         full_record_path = file_path_header + file.replace('\n', '')
