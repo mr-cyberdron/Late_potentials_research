@@ -64,9 +64,9 @@ def plot_ecg_record(signals, leads, units, fs_mass, title, filee, metadata) -> N
     def save_analyse_result(typee):
         dataline = {'file': [filee], 'type': [typee], 'metadata_json': [str(metadata)]}
         df_line = pd.DataFrame(data=dataline)
-        old_df = pd.read_csv("logfile.csv")
+        old_df = pd.read_csv(logfile_name)
         new_df = pd.concat([old_df, df_line])
-        new_df.to_csv('logfile.csv', index=False)
+        new_df.to_csv(logfile_name, index=False)
         plt.close(fig)
         plt.close(fig2)
 
@@ -84,20 +84,22 @@ def plot_ecg_record(signals, leads, units, fs_mass, title, filee, metadata) -> N
 
 # ------------------------------------Input variables-------------------------------------------#
 #ptb-diagnostic-ecg-database-1.0.0 https://physionet.org/content/ptbdb/1.0.0/
-files_list_path = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/C/RECORDS'
+files_list_path = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/ptb-diagnostic-ecg-database-1.0.0/RECORDS'
 file_path_header = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/ptb-diagnostic-ecg-database-1.0.0/'
 # ----------------------------------------------------------------------------------------------#
 with open(files_list_path, "r") as f:
     files_paths_parts = f.readlines()
 
-if os.path.exists("logfile.csv") is False:
+logfile_name = file_path_header.split('/')[-2]+'_logfile.csv'
+
+if os.path.exists(logfile_name) is False:
     print('not_exist')
     tmp_df = pd.DataFrame(data={'file': [], 'type': [], 'metadata_json': []})
-    tmp_df.to_csv('logfile.csv', index=False)
+    tmp_df.to_csv(logfile_name, index=False)
 else:
     print("logfile Exists")
 
-files_list = list(pd.read_csv("logfile.csv")['file'].to_numpy())
+files_list = list(pd.read_csv(logfile_name)['file'].to_numpy())
 
 file_counter = 1
 for file in files_paths_parts:
@@ -106,6 +108,8 @@ for file in files_paths_parts:
     file_counter += 1
     print(total_num)
     if file not in files_list:
+    # direct_file_name = file.split('/')[-1]
+    # if direct_file_name == "s0090lre" +'\n':
         full_record_path = file_path_header + file.replace('\n', '')
         wfdb_file_object = WfdbParce(full_record_path).read()
         record_object_data = EcgRecord(Fs=wfdb_file_object.Fs,

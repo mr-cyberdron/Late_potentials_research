@@ -16,8 +16,6 @@ classes_dict_0 = {"LVP": 'Late Ventricular Potentials',
                   'LAP': 'Late Atrial Potentials',
                   'LVP_and_LAP': 'Late Ventricular and Atrial Potentials',
                   'none': 'No_Late_Potentials'}
-
-
 # ----------------------------------------------------------------------------------------------#
 
 def t_vectors(signals, fs) -> list[list[float]]:
