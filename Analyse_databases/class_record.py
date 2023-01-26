@@ -22,18 +22,59 @@ class EcgRecord:
         if all_leads_peaks_average:
             averaged_r_peaks_list = self.average_peaks_by_all_leads(self.Signals, self.Fs[0])
         for signal, fs in zip(self.Signals, self.Fs):
-            complex_averaged = list(self.saecg_complex(signal, fs, r_peaks=averaged_r_peaks_list))
+            # import Frequency_tools.fft.FFT_tools
+            # Frequency_tools.fft.FFT_tools.timefft_analisys(signal, fs, plotflag=True, log=True) #bp_filter=[30,80])
+            complex_averaged = self.saecg_complex(signal, fs, r_peaks=averaged_r_peaks_list,
+                                                  filt_50_hz=False, filt_100_hz=False, filt_60_hz=False,
+                                                  filt_120_hz=False)
+            if np.isnan(complex_averaged).all():
+                complex_averaged = [0, 0, 0]
+            else:
+                complex_averaged = list(complex_averaged)
+
             saecg_mass.append(complex_averaged)
         self.SAECG = saecg_mass
         return self
 
+    def ged_record_len(self):
+        len_dict = {'Unit': 'sec'}
+        for lead_name, signal, fs in zip(self.Leads, self.Signals, self.Fs):
+            len_dict[lead_name] = len(signal) / fs
+        return len_dict
+
+    def remove_leads(self, *lead_to_remove: [str]):
+        new_fs_mass = []
+        new_signals_mass = []
+        new_leads_mass = []
+        new_units_mass = []
+        for fs, signal, lead, unit in zip(self.Fs, self.Signals, self.Leads, self.Units):
+            if lead in lead_to_remove:
+                pass
+            else:
+                new_fs_mass.append(fs)
+                new_signals_mass.append(signal)
+                new_leads_mass.append(lead)
+                new_units_mass.append(unit)
+
+        self.Fs = new_fs_mass
+        self.Signals = new_signals_mass
+        self.Leads = new_leads_mass
+        self.Units = new_units_mass
+        return self
+
     @staticmethod
     def saecg_complex(signal: np.ndarray[float], fs: [int], r_peaks: [int] = None,
-                      filt_50_hz=True) -> np.ndarray[float]:
+                      filt_50_hz=True, filt_100_hz=True, filt_60_hz=True, filt_120_hz=True) -> np.ndarray[float]:
 
         signal_filtered = EcgRecord.saecg_filter(signal, fs)
         if filt_50_hz:
             signal_filtered = EcgRecord.stnphaze_50_hz_filter(signal_filtered, fs)
+        if filt_60_hz:
+            signal_filtered = EcgRecord.stnphaze_60_hz_filter(signal_filtered, fs)
+        if filt_120_hz:
+            signal_filtered = EcgRecord.stnphaze_120_hz_filter(signal_filtered, fs)
+        if filt_100_hz:
+            signal_filtered = EcgRecord.stnphaze_100_hz_filter(signal_filtered, fs)
         if list(r_peaks):
             qrs_epochs = nk.ecg_segment(signal_filtered, sampling_rate=fs, rpeaks=r_peaks, show=False)
             plt.show()
@@ -69,13 +110,31 @@ class EcgRecord:
     def saecg_filter(signal, fs):
         signal_filtered = AnalogFilterDesign(signal, fs).hp(order=5, cutoff=1).zerophaze().butter() \
             .filtration()
-        signal_filtered = AnalogFilterDesign(signal_filtered, fs).lp(order=5, cutoff=250).zerophaze().butter() \
+        signal_filtered = AnalogFilterDesign(signal_filtered, fs).lp(order=5, cutoff=240).zerophaze().butter() \
             .filtration()
         return signal_filtered
 
     @staticmethod
     def stnphaze_50_hz_filter(signal, fs):
-        signal_filtered = AnalogFilterDesign(signal, fs).notch(quality_factor=80, cutoff=50).zerophaze() \
+        signal_filtered = AnalogFilterDesign(signal, fs).notch(quality_factor=150, cutoff=50).zerophaze() \
+            .filtration(show=False)
+        return signal_filtered
+
+    @staticmethod
+    def stnphaze_100_hz_filter(signal, fs):
+        signal_filtered = AnalogFilterDesign(signal, fs).notch(quality_factor=150, cutoff=100).zerophaze() \
+            .filtration(show=False)
+        return signal_filtered
+
+    @staticmethod
+    def stnphaze_60_hz_filter(signal, fs):
+        signal_filtered = AnalogFilterDesign(signal, fs).notch(quality_factor=150, cutoff=60).zerophaze() \
+            .filtration(show=False)
+        return signal_filtered
+
+    @staticmethod
+    def stnphaze_120_hz_filter(signal, fs):
+        signal_filtered = AnalogFilterDesign(signal, fs).notch(quality_factor=150, cutoff=120).zerophaze() \
             .filtration(show=False)
         return signal_filtered
 
