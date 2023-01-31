@@ -1,4 +1,6 @@
 import numpy as np
+
+import Analyse_databases.class_UIselector
 from Analyse_databases.modules.WFDB import WfdbParce
 from class_record import EcgRecord
 import matplotlib.pyplot as plt
@@ -16,6 +18,45 @@ def t_vectors(signals, fs) -> list[list[float]]:
         t_vector = list(np.linspace(0, siglen_s, sig_units_num))
         t_vectors_mass.append(t_vector)
     return t_vectors_mass
+
+def ui_selector_processing(signals, leads, units, fs_mass, title, filee, metadata):
+    def detect_type(anot):
+        lvp_flag = False
+        lap_flag = False
+        if not anot:
+            return 'no_LAP_no_LVP'
+        for event in anot:
+            if event['type'] == 'LVP':
+                lvp_flag = True
+            if event['type'] == 'LAP':
+                lap_flag = True
+        if lvp_flag == False and lap_flag == True:
+            return 'LAP'
+        if lvp_flag == True and lap_flag == False:
+            return 'LVP'
+        if lvp_flag == True and lap_flag == True:
+            return 'LAP_and_LVP'
+
+
+    # -------------------Develop UI--------------------------#
+    ui_selector = Analyse_databases.class_UIselector.UIselector()
+    ui_selector.signals = signals
+    ui_selector.leads = leads
+    ui_selector.units = units
+    ui_selector.fs_mass = fs_mass
+    ui_selector.title = title
+    ui_selector.filee = filee
+    ui_selector.metadata = metadata
+
+    anotations = ui_selector.select_events()
+    typee = detect_type(anotations)
+    dataline = {'file': [filee], 'type': [typee], 'metadata_json': [str(metadata)],'events': [str(anotations)]}
+    df_line = pd.DataFrame(data=dataline)
+    old_df = pd.read_csv(logfile_name)
+    new_df = pd.concat([old_df, df_line])
+    new_df.to_csv(logfile_name, index=False)
+
+    # -------------------------------------------------------#
 
 
 def plot_ecg_record(signals, leads, units, fs_mass, title, filee, metadata) -> None:
@@ -101,10 +142,10 @@ def plot_ecg_record(signals, leads, units, fs_mass, title, filee, metadata) -> N
 # ptb-diagnostic-ecg-database-1.0.0 https://physionet.org/content/ptbdb/1.0.0/
 file_path_header = 'E:/Bases/PTB DATABASE/ptb-diagnostic-ecg-database-1.0.0/ptb-diagnostic-ecg-database-1.0.0/'
 # Cerebral Vasoregulation in Elderly with Stroke https://physionet.org/content/cves/1.0.0/
-# file_path_header = 'E:/Bases/Cerebral Vasoregulation in Elderly with Stroke/splitting_result/'
+#file_path_header = 'E:/Bases/Cerebral Vasoregulation in Elderly with Stroke/splitting_result/'
 # classification-of-heart-sound-recordings-the-physionet-computing-in-cardiology-challenge-2016-1.0.0
 # https://physionet.org/content/challenge-2016/1.0.0/
-# file_path_header = 'E:/Bases/CLASSI~1/CLASSI~1.0/CLASSI~1.0/'
+#file_path_header = 'E:/Bases/CLASSI~1/CLASSI~1.0/CLASSI~1.0/'
 # ----------------------------------------------------------------------------------------------#
 files_paths_parts = []
 for root, dirs, files in os.walk(file_path_header):
@@ -117,7 +158,8 @@ logfile_name = file_path_header.split('/')[-2] + '_logfile.csv'
 
 if os.path.exists(logfile_name) is False:
     print('not_exist')
-    tmp_df = pd.DataFrame(data={'file': [], 'type': [], 'metadata_json': []})
+    # tmp_df = pd.DataFrame(data={'file': [], 'type': [], 'metadata_json': []})
+    tmp_df = pd.DataFrame(data={'file': [], 'type': [], 'metadata_json': [], 'events': []})
     tmp_df.to_csv(logfile_name, index=False)
 else:
     print("logfile Exists")
@@ -141,7 +183,7 @@ for file in files_paths_parts:
                                        Units=wfdb_file_object.Units,
                                        Metadata=wfdb_file_object.Metadata)
         record_object_data = record_object_data.remove_leads('marker', 'abp', 'mcar', 'mcal', 'radi', 'thermst',
-                                                             'flow_rate', 'o2', 'co2', 'PCG')
+                                                             'flow_rate', 'o2','co2', 'PCG') #
         last_record_len = list(record_object_data.ged_record_len().values())[-1]
         last_record_fs = record_object_data.Fs[-1]
         print('ECG fs: ' + str(last_record_fs) + ' len:' + str(last_record_len) + ' Sec (' + str(
@@ -154,6 +196,7 @@ for file in files_paths_parts:
         units_p = record_object_data.Units
         fs_mass_p = record_object_data.Fs
         img_tit = file.split('/')[-1] + ' ' + str(file_counter - 1) + ' ' + str(record_object_data.Metadata)
-        plot_ecg_record(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata)
+        # plot_ecg_record(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata)
+        ui_selector_processing(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata)
     else:
         print('skipped')
