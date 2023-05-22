@@ -5,7 +5,7 @@ from Analyse_databases.modules import DOCX
 import json
 import numpy as np
 from Analyse_databases.modules.WFDB import WfdbParce
-from class_record import EcgRecord
+from BIOMED_SIGNALS.ECG.class_record import EcgRecord
 import pandas as pd
 import os
 
@@ -119,6 +119,18 @@ def create_report(classes_df_dict, files_path):
             report_doc.paragraph()
             report_doc.paragraph()
             report_doc.text_style.align = 'CENTER'
+            report_doc.bold('Late potentials Simson features')
+            report_doc.normal_style()
+            report_doc.paragraph()
+            report_doc.text_style.align = 'LEFT'
+            report_doc.bold('LAP features')
+            LAP_simson_features = file_data_row['LAP_vmagnitude_features'].replace("'", '"')
+            report_doc.normal(str(LAP_simson_features) + ', ')
+            LVP_simson_features = file_data_row['LVP_vmagnitude_features'].replace("'", '"')
+            report_doc.bold('LVP features')
+            report_doc.normal(str(LVP_simson_features) + ', ')
+            report_doc.text_style.align = 'CENTER'
+            report_doc.paragraph()
             report_doc.bold('Metadata')
             report_doc.normal_style()
             report_doc.paragraph()

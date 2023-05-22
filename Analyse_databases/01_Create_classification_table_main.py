@@ -1,8 +1,9 @@
 import numpy as np
 
 import Analyse_databases.class_UIselector
+import BIOMED_SIGNALS.ECG.ECG_features
 from Analyse_databases.modules.WFDB import WfdbParce
-from class_record import EcgRecord
+from BIOMED_SIGNALS.ECG.class_record import EcgRecord
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import pylab
@@ -19,7 +20,9 @@ def t_vectors(signals, fs) -> list[list[float]]:
         t_vectors_mass.append(t_vector)
     return t_vectors_mass
 
-def ui_selector_processing(signals, leads, units, fs_mass, title, filee, metadata):
+def ui_selector_processing(signals, leads, units, fs_mass, title, filee, metadata,
+                           late_atrial_potentials_vector_magnitude_features,
+                               late_ventricular_potentials_vector_magnitude_features):
     def detect_type(anot):
         lvp_flag = False
         lap_flag = False
@@ -50,7 +53,11 @@ def ui_selector_processing(signals, leads, units, fs_mass, title, filee, metadat
 
     anotations = ui_selector.select_events()
     typee = detect_type(anotations)
-    dataline = {'file': [filee], 'type': [typee], 'metadata_json': [str(metadata)],'events': [str(anotations)]}
+    dataline = {'file': [filee], 'type': [typee], 'metadata_json': [str(metadata)],
+                'events': [str(anotations)],
+                'LAP_vmagnitude_features': [str(late_atrial_potentials_vector_magnitude_features)],
+                'LVP_vmagnitude_features': [str(late_ventricular_potentials_vector_magnitude_features)]}
+
     df_line = pd.DataFrame(data=dataline)
     old_df = pd.read_csv(logfile_name)
     new_df = pd.concat([old_df, df_line])
@@ -172,7 +179,7 @@ for file in files_paths_parts:
     total_num = str(file_counter) + '/' + str(len(files_paths_parts))
     file_counter += 1
     print(total_num)
-    if file not in files_list:  # and file_counter > 181:
+    if file not in files_list :#and file_counter > 257:  # and file_counter > 181:
         # direct_file_name = file.split('/')[-1]
         # if direct_file_name == "s0090lre" +'\n':
         full_record_path = file_path_header + file.replace('\n', '')
@@ -184,6 +191,16 @@ for file in files_paths_parts:
                                        Metadata=wfdb_file_object.Metadata)
         record_object_data = record_object_data.remove_leads('marker', 'abp', 'mcar', 'mcal', 'radi', 'thermst',
                                                              'flow_rate', 'o2','co2', 'PCG') #
+
+        #--------Vector_magnitude_features
+        try:
+            late_atrial_potentials_vector_magnitude_features, \
+            late_ventricular_potentials_vector_magnitude_features = \
+                BIOMED_SIGNALS.ECG.ECG_features.ecg_ortogonal_leads_vector_magnitude_and_features(record_object_data)
+        except:
+            late_atrial_potentials_vector_magnitude_features = None
+            late_ventricular_potentials_vector_magnitude_features = None
+
         last_record_len = list(record_object_data.ged_record_len().values())[-1]
         last_record_fs = record_object_data.Fs[-1]
         print('ECG fs: ' + str(last_record_fs) + ' len:' + str(last_record_len) + ' Sec (' + str(
@@ -196,7 +213,9 @@ for file in files_paths_parts:
         units_p = record_object_data.Units
         fs_mass_p = record_object_data.Fs
         img_tit = file.split('/')[-1] + ' ' + str(file_counter - 1) + ' ' + str(record_object_data.Metadata)
-        # plot_ecg_record(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata)
-        ui_selector_processing(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata)
+        #plot_ecg_record(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata)
+        ui_selector_processing(signals_p, leads_p, units_p, fs_mass_p, img_tit, file, record_object_data.Metadata,
+                               late_atrial_potentials_vector_magnitude_features,
+                               late_ventricular_potentials_vector_magnitude_features)
     else:
         print('skipped')
